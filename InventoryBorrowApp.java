@@ -1,33 +1,36 @@
-// InventoryBorrowApp.java
-// เมนู: เพิ่ม/ลบ/ค้นหา/รายการทั้งหมด + ยืม/คืนอุปกรณ์
-// เงื่อนไขสำคัญ: ถ้าเพิ่มชื่ออุปกรณ์ซ้ำ → ไม่สร้าง object ใหม่ แต่เพิ่มจำนวนเข้าไปในรายการเดิม
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /* ========== MODEL (OOP) ========== */
-abstract class Item {                         // Inheritance base
-    private final int id;                     // Encapsulation
+abstract class Item {
+    // Encapsulation: ซ่อนฟิลด์ไว้ภายใน (private) และ final เพื่อไม่ให้แก้ภายหลัง
+    private final int id;
     private final String name;
 
+    // กำหนดผ่าน constructor พร้อม validation
     protected Item(int id, String name) {
         if (name == null || name.isBlank()) throw new IllegalArgumentException("name required");
         this.id = id;
         this.name = name.trim();
     }
+    // ให้เข้าถึงด้วย getter เท่านั้น (ไม่เปิด setter -> ป้องกันการแก้ไขโดยตรง)
     public final int getId() { return id; }
     public final String getName() { return name; }
 
-    public abstract String type();            // Polymorphism (override ในคลาสลูก)
+    // Abstraction + Polymorphism: บังคับให้คลาสลูกบอก "type" ของตนเอง
+    public abstract String type();
+
+    // Polymorphism (override ในคลาสลูกได้): รูปแบบการแสดงผลมาตรฐานของ Item
     @Override public String toString() {
         return String.format("#%d [%s] %s", id, type(), name);
     }
 }
 
-class Equipment extends Item {                // คลาสหลักของโปรเจกต์
-    private int total;                        // ทั้งหมด
-    private int available;                    // คงเหลือให้ยืม
+class Equipment extends Item {
+    // Encapsulation: ฟิลด์สต็อกเป็น private และถูกปรับค่าได้ผ่านเมธอดที่มีกติกาเท่านั้น
+    private int total;     // จำนวนทั้งหมดในคลัง
+    private int available; // จำนวนพร้อมให้ยืม (total - ที่ถูกยืมค้าง)
 
     public Equipment(int id, String name, int quantity) {
         super(id, name);
@@ -35,21 +38,41 @@ class Equipment extends Item {                // คลาสหลักขอ�
         this.total = quantity;
         this.available = quantity;
     }
+    // Polymorphism: บอกชนิดของ Item นี้
     @Override public String type() { return "Equipment"; }
 
+    // Getter (อ่านอย่างเดียวจากภายนอก)
     public int getTotal() { return total; }
     public int getAvailable() { return available; }
     public int getBorrowed() { return total - available; }
 
+    // เพิ่มสต็อก (มี validation) -> หลัก Encapsulation
     public void addQuantity(int q) {
         if (q <= 0) throw new IllegalArgumentException("quantity to add must be > 0");
         total += q; available += q;
     }
+
+    // ลดจำนวนสต็อก (ห้ามลดจนต่ำกว่าที่ "ยืมค้าง") -> validation ภายในอ็อบเจกต์
+    public void removeQuantity(int q) {
+        if (q <= 0) throw new IllegalArgumentException("quantity to reduce must be > 0");
+        if (q > total) throw new IllegalArgumentException("ลดเกินจำนวนทั้งหมด");
+        int borrowed = getBorrowed();
+        if (total - q < borrowed) {
+            // ป้องกันข้อมูลผิด: ถ้าลดจนต่ำกว่า (ของที่ถูกยืม) => ผิดกติกา
+            throw new IllegalStateException("ลดไม่ได้: จะทำให้สต็อกต่ำกว่าจำนวนที่ถูกยืมค้าง ("+borrowed+")");
+        }
+        total -= q;
+        available = total - borrowed; // ให้ available สอดคล้องกับ total/borrowed เสมอ
+    }
+
+    // ยืม: ต้องมีของพร้อมให้ยืมพอ (available) และจำนวนต้อง > 0
     public boolean borrow(int qty) {
         if (qty <= 0) return false;
         if (qty > available) return false;
         available -= qty; return true;
     }
+
+    // คืน: จำนวนต้อง > 0 และห้ามทำให้ available > total (ซึ่งแปลว่าคืนเกินที่ค้าง)
     public void giveBack(int qty) {
         if (qty <= 0) throw new IllegalArgumentException("qty > 0");
         if (available + qty > total) throw new IllegalStateException("คืนเกินจำนวนที่ยืมค้าง");
@@ -57,7 +80,7 @@ class Equipment extends Item {                // คลาสหลักขอ�
     }
 
     @Override public String toString() {
-        return String.format("#%d %s — total=%d, available=%d", getId(), getName(), total, available);
+        return String.format("#%d %s  ทั้งหมด = %d, คงเหลือ = %d", getId(), getName(), total, available);
     }
 }
 
@@ -72,6 +95,7 @@ class EquipmentRepository {
     public Optional<Equipment> findById(int id) { return Optional.ofNullable(store.get(id)); }
     public List<Equipment> findAll() { return new ArrayList<>(store.values()); }
 
+    // หา "ชื่อซ้ำ" เพื่อรวมจำนวน (business rule ใน service จะเรียกใช้)
     public Optional<Equipment> findByNameExactIgnoreCase(String name) {
         if (name == null) return Optional.empty();
         String key = name.trim().toLowerCase();
@@ -81,6 +105,7 @@ class EquipmentRepository {
         return Optional.empty();
     }
 
+    // ค้นหาชื่อแบบ contains (search)
     public List<Equipment> searchByName(String kw) {
         String key = (kw==null?"":kw).toLowerCase();
         List<Equipment> out = new ArrayList<>();
@@ -96,9 +121,9 @@ class Tx {
     private final String studentId;
     private final int itemId;
     private final String itemName;
-    private int qty;                           // จำนวนในบรรทัดนี้ (อาจถูกแยกตอนคืนบางส่วน)
+    private int qty;                 // จำนวนที่ยืมในบรรทัดนี้ (ถ้า OPEN = คงค้าง)
     private final LocalDateTime borrowAt;
-    private LocalDateTime returnAt;            // null = ยังไม่คืน (open)
+    private LocalDateTime returnAt;  // null = ยังไม่คืน (OPEN)
 
     public Tx(String sid, int itemId, String itemName, int qty, LocalDateTime at) {
         this.studentId = sid; this.itemId = itemId; this.itemName = itemName;
@@ -112,9 +137,13 @@ class Tx {
     public LocalDateTime getReturnAt(){ return returnAt; }
     public boolean isOpen(){ return returnAt == null; }
     public void closeAll(LocalDateTime when){ this.returnAt = when; }
+
+    // ช่วยฟอร์แมตวันเวลาเวลาแสดงผล
     public static String fmt(LocalDateTime dt){
         return dt==null? "" : dt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
+
+    // แสดงผลในรูปแบบตารางอ่านง่าย
     @Override public String toString(){
         String status = isOpen()? "OPEN" : "CLOSED";
         return String.format("%-10s | #%d %-22s | %3d | %s | %s | %s",
@@ -124,6 +153,7 @@ class Tx {
 
 /* ========== Services ========== */
 class EquipmentService {
+    // DTO ย่อย: บอกผล "เพิ่ม/อัปเดต"
     static class AddResult {
         final Equipment equipment;
         final boolean updatedExisting; // true = พบชื่อซ้ำและเพิ่มจำนวน, false = สร้างใหม่
@@ -133,27 +163,29 @@ class EquipmentService {
     private final EquipmentRepository repo;
     public EquipmentService(EquipmentRepository repo) { this.repo = repo; }
 
-    // เพิ่มด้วย “ชื่อ + จำนวน” เท่านั้น
+    // เพิ่มรายการแบบ “รวมชื่อซ้ำ” ตามกติกา
     public AddResult addOrIncrease(String name, int qty) {
         if (name == null || name.isBlank()) throw new IllegalArgumentException("name required");
         if (qty <= 0) throw new IllegalArgumentException("quantity > 0");
-
-        // ตรวจสอบว่ามีชื่อซ้ำหรือไม่ (ไม่สนตัวพิมพ์เล็กใหญ่)
         var dup = repo.findByNameExactIgnoreCase(name);
         if (dup.isPresent()) {
             Equipment e = dup.get();
-            e.addQuantity(qty);                 // เพิ่มจำนวนใน object เดิม
-            return new AddResult(e, true);      // อัปเดตรายการเดิม
+            e.addQuantity(qty);                  // รวมเข้ารายการเดิม
+            return new AddResult(e, true);
         }
-
-        // ถ้าไม่มีชื่อซ้ำ → สร้างใหม่
         int id = repo.nextId();
         Equipment e = new Equipment(id, name.trim(), qty);
         repo.save(e);
         return new AddResult(e, false);
     }
 
-    public boolean deleteItem(int id) { return repo.delete(id); }
+    // ลดจำนวนแบบกันผิด (ใช้ validation ภายใน Equipment.removeQuantity)
+    public Equipment reduceQuantity(int id, int qty){
+        Equipment e = repo.findById(id).orElseThrow(() -> new NoSuchElementException("ไม่พบรหัสนี้"));
+        e.removeQuantity(qty);
+        return e;
+    }
+
     public List<Equipment> listAll() { return repo.findAll(); }
     public List<Equipment> search(String kw) { return repo.searchByName(kw); }
     public Optional<Equipment> find(int id) { return repo.findById(id); }
@@ -165,6 +197,7 @@ class BorrowService {
 
     public BorrowService(EquipmentService service){ this.equipmentService = service; }
 
+    // ยืม: ตรวจของ + available ผ่าน Equipment.borrow()
     public String borrow(String studentId, int itemId, int qty){
         var e = equipmentService.find(itemId).orElse(null);
         if (e == null) return "ไม่พบอุปกรณ์";
@@ -173,16 +206,25 @@ class BorrowService {
         return "ยืมสำเร็จ";
     }
 
-    // จับคู่คืนกับบรรทัดล่าสุดก่อน (LIFO) และรองรับ “คืนบางส่วน”
+    // คืน: เช็คยอดค้างของ student+item ก่อน, ถ้าคืนเกิน -> "ตัดรับ" เท่าที่ค้างจริง
     public String giveBack(String studentId, int itemId, int qty){
         var e = equipmentService.find(itemId).orElse(null);
         if (e == null) return "ไม่พบอุปกรณ์";
+
+        int outstanding = outstandingQty(studentId, itemId); // ยอดค้างปัจจุบัน
+        if (outstanding <= 0) {
+            return "คืนไม่ได้: ไม่มีรายการยืมค้างของอุปกรณ์นี้ในชื่อ " + studentId;
+        }
+
+        int accept = Math.min(qty, outstanding); // cap ปริมาณคืนไม่เกินยอดค้าง
         try {
-            e.giveBack(qty);
+            e.giveBack(accept); // Validation ภายใน Equipment อีกชั้น
         } catch (Exception ex) {
             return "คืนไม่ได้: " + ex.getMessage();
         }
-        int toClose = qty;
+
+        // ปิดธุรกรรมตามจำนวนที่รับคืน (กลยุทธ์ LIFO + รองรับปิดบางส่วน)
+        int toClose = accept;
         LocalDateTime now = LocalDateTime.now();
         for (int i = txs.size()-1; i>=0 && toClose>0; i--){
             Tx t = txs.get(i);
@@ -192,9 +234,9 @@ class BorrowService {
 
             if (t.getQty() <= toClose){
                 toClose -= t.getQty();
-                t.closeAll(now);               // ปิดทั้งบรรทัด
+                t.closeAll(now);  // ปิดทั้งบรรทัด
             } else {
-                // แตกบรรทัด: ปิดบางส่วน
+                // ปิดบางส่วน: แตกบรรทัดเป็น closed + stillOpen เพื่อคงประวัติถูกต้อง
                 int remain = t.getQty() - toClose;
                 Tx closed    = new Tx(t.getStudentId(), t.getItemId(), t.getItemName(), toClose, t.getBorrowAt());
                 closed.closeAll(now);
@@ -205,15 +247,27 @@ class BorrowService {
                 toClose = 0;
             }
         }
+
+        if (qty > outstanding) {
+            // แจ้งผู้ใช้ให้เข้าใจว่าระบบ "ตัดรับ" เท่าที่ค้างจริง
+            return "คืนสำเร็จ (รับคืนเพียง " + accept + " จากที่ระบุ " + qty + " เพราะค้าง " + outstanding + ")";
+        }
         return "คืนสำเร็จ";
     }
 
-    public List<Tx> listAllTx(){ return txs; }
-    public List<Tx> listOpenTx(){
-        List<Tx> out = new ArrayList<>();
-        for (Tx t: txs) if (t.isOpen()) out.add(t);
-        return out;
+    // สรุปยอดยืมค้างสำหรับ student+item (ใช้ก่อนคืน)
+    private int outstandingQty(String studentId, int itemId){
+        int sum = 0;
+        for (Tx t : txs){
+            if (t.isOpen() && t.getItemId()==itemId && t.getStudentId().equalsIgnoreCase(studentId)){
+                sum += t.getQty();
+            }
+        }
+        return sum;
     }
+
+    // สำหรับเมนูประวัติ
+    public List<Tx> listAllTx(){ return txs; }
     public List<Tx> listByStudent(String sid){
         List<Tx> out = new ArrayList<>();
         for (Tx t: txs) if (t.getStudentId().equalsIgnoreCase(sid)) out.add(t);
@@ -222,6 +276,7 @@ class BorrowService {
 }
 
 /* ========== CLI (Menu) ========== */
+
 public class InventoryBorrowApp {
     private final Scanner sc = new Scanner(System.in);
     private final EquipmentService equipmentService = new EquipmentService(new EquipmentRepository());
@@ -230,7 +285,7 @@ public class InventoryBorrowApp {
     public static void main(String[] args) { new InventoryBorrowApp().run(); }
 
     private void seed(){
-       
+        
     }
 
     private void run(){
@@ -241,7 +296,7 @@ public class InventoryBorrowApp {
             String c = sc.nextLine().trim();
             switch (c){
                 case "1" -> doAdd();
-                case "2" -> doDelete();
+                case "2" -> doReduce();
                 case "3" -> doSearch();
                 case "4" -> doList();
                 case "5" -> doBorrow();
@@ -256,8 +311,8 @@ public class InventoryBorrowApp {
 
     private void printMenu(){
         System.out.println("=== Equipment Menu ===");
-        System.out.println("1) เพิ่มรายการ (ชื่อ + จำนวน) — ถ้าชื่อซ้ำจะเพิ่มจำนวนให้รายการเดิม");
-        System.out.println("2) ลบรายการ");
+        System.out.println("1) เพิ่มรายการ");
+        System.out.println("2) ลดจำนวน");
         System.out.println("3) ค้นหารายการ");
         System.out.println("4) รายการทั้งหมด");
         System.out.println("5) ยืม อุปกรณ์");
@@ -273,6 +328,7 @@ public class InventoryBorrowApp {
             System.out.print("จำนวนที่เพิ่ม: ");
             int qty = Integer.parseInt(sc.nextLine().trim());
 
+            // เรียก Service เพื่อบังคับกติกา "ชื่อซ้ำ -> เพิ่มจำนวน" (ไม่สร้าง object ซ้ำ)
             EquipmentService.AddResult res = equipmentService.addOrIncrease(name, qty);
             if (res.updatedExisting) {
                 System.out.println("พบชื่อซ้ำ → อัปเดตจำนวนให้รายการเดิมแล้ว");
@@ -285,14 +341,23 @@ public class InventoryBorrowApp {
         }
     }
 
-    private void doDelete(){
+    private void doReduce(){
         try{
             System.out.print("รหัส (#id): ");
             int id = Integer.parseInt(sc.nextLine().trim());
-            boolean ok = equipmentService.deleteItem(id);
-            System.out.println(ok? "ลบสำเร็จ" : "ไม่พบรายการ");
+            System.out.print("จำนวนที่ลด: ");
+            int qty = Integer.parseInt(sc.nextLine().trim());
+
+            // ลดจำนวนผ่าน Service (ภายในตรวจห้ามต่ำกว่ายืมค้าง)
+            Equipment e = equipmentService.reduceQuantity(id, qty);
+            System.out.println("ลดจำนวนเรียบร้อย");
+            System.out.println("สถานะปัจจุบัน: " + e);
         }catch(NumberFormatException nfe){
-            System.out.println("รหัสต้องเป็นตัวเลข");
+            System.out.println("กรอกตัวเลขให้ถูกต้อง");
+        }catch(NoSuchElementException nf){
+            System.out.println(nf.getMessage());
+        }catch(IllegalArgumentException | IllegalStateException ex){
+            System.out.println("ลดไม่ได้: " + ex.getMessage());
         }
     }
 
@@ -318,6 +383,8 @@ public class InventoryBorrowApp {
             int id = Integer.parseInt(sc.nextLine().trim());
             System.out.print("จำนวน: ");
             int qty = Integer.parseInt(sc.nextLine().trim());
+
+            // เรียก BorrowService เพื่อยืม (เช็ค available ภายใน)
             String msg = borrowService.borrow(sid, id, qty);
             System.out.println(msg);
         }catch(NumberFormatException nfe){
@@ -333,6 +400,8 @@ public class InventoryBorrowApp {
             int id = Integer.parseInt(sc.nextLine().trim());
             System.out.print("จำนวน: ");
             int qty = Integer.parseInt(sc.nextLine().trim());
+
+            // คืน: มีการคำนวณยอดค้าง + ตัดรับคืนเท่าที่ค้างจริง + ปิดธุรกรรมแบบ LIFO
             String msg = borrowService.giveBack(sid, id, qty);
             System.out.println(msg);
         }catch(NumberFormatException nfe){
@@ -341,15 +410,18 @@ public class InventoryBorrowApp {
     }
 
     private void showTx(){
-        System.out.println("ดูประวัติ: 1) all  2) open  3) by student");
+        // เหลือ 2 ตัวเลือก: ทั้งหมด / เฉพาะรหัสนิสิต
+        System.out.println("ดูประวัติ: 1) all  2) by student");
         String m = sc.nextLine().trim();
         List<Tx> list = switch (m){
-            case "2" -> borrowService.listOpenTx();
-            case "3" -> { System.out.print("รหัสนิสิต: "); yield borrowService.listByStudent(sc.nextLine().trim()); }
+            case "2" -> {
+                System.out.print("รหัสนิสิต: ");
+                yield borrowService.listByStudent(sc.nextLine().trim());
+            }
             default  -> borrowService.listAllTx();
         };
         if (list.isEmpty()){ System.out.println("ไม่มีประวัติ"); return; }
-        System.out.println("studentId | #id ชื่ออุปกรณ์            | qty | borrow_at          | return_at          | status");
+        System.out.println("รหัสนิสิต | รหัสอุปกรณ์  ชื่ออุปกรณ์| จำนวน | วันและเวลาที่ยืม          | วันและเวลาที่คืน          | สถานะ");
         System.out.println("-------------------------------------------------------------------------------------------------");
         for (Tx t: list) System.out.println(t);
     }
