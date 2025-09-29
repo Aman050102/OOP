@@ -37,15 +37,15 @@
 - `BorrowService`  
 - `InventoryBorrowApp` (Main + CLI Menu)
 
-### 2. Encapsulation (การห่อหุ้ม)
+### 2. Encapsulation 
 - ตัวแปรภายในแต่ละคลาสถูกกำหนดเป็น `private` เช่น `id`, `name`, `total`, `available`  
 - ใช้ `getter` หรือ `method` ในการเข้าถึงและแก้ไขค่า เช่น `getAvailable()`, `addQuantity()`, `borrow()`, `giveBack()`
 
-### 3. Inheritance (การสืบทอด)
+### 3. Inheritance 
 - คลาส `Equipment` สืบทอด (`extends`) มาจาก `Item`  
 - ใช้ `super()` เพื่อเรียก constructor ของคลาสแม่
 
-### 4. Polymorphism (พหุรูป)
+### 4. Polymorphism 
 - เมธอด `public abstract String type();` อยู่ใน `Item`  
 - คลาสลูก `Equipment` override เมธอดนี้ → คืนค่า `"Equipment"`  
 - การ override `toString()` ของแต่ละคลาสเพื่อแสดงผลในรูปแบบต่างกัน
