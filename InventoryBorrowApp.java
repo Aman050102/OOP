@@ -284,8 +284,7 @@ public class InventoryBorrowApp {
 
     public static void main(String[] args) { new InventoryBorrowApp().run(); }
 
-    private void seed(){
-        
+    private void seed(){        
     }
 
     private void run(){
