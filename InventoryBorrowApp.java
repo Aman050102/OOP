@@ -315,14 +315,14 @@ public class InventoryBorrowApp {
             System.out.print("เลือกเมนู: ");
             String c = sc.nextLine().trim();
             switch (c){
-                case "1" -> doAdd();
-                case "2" -> doReduce();
-                case "3" -> doSearch();
-                case "4" -> doList();
-                case "5" -> doBorrow();
-                case "6" -> doReturn();
-                case "7" -> showTx();
-                case "8" -> { System.out.println("จบโปรแกรม!!!"); return; }
+                case "1", "เพิ่มรายการ" -> doAdd();
+                case "2", "ลดจำนวน" -> doReduce();
+                case "3", "ค้นหารายการ" -> doSearch();
+                case "4", "รายการทั้งหมด" -> doList();
+                case "5", "ยืม อุปกรณ์" -> doBorrow();
+                case "6", "คืน อุปกรณ์" -> doReturn();
+                case "7", "ดูประวัติการยืม-คืน" -> showTx();
+                case "8", "จบโปรแกรม" -> { System.out.println("จบโปรแกรม!!!"); return; }
                 default -> System.out.println("เมนูไม่ถูกต้อง");
             }
             System.out.println();
@@ -340,6 +340,42 @@ public class InventoryBorrowApp {
         System.out.println("7) ดูประวัติการยืม-คืน");
         System.out.println("8) จบโปรแกรม");
     }
+
+    // ---------- helpers สำหรับตารางสรุปรายการ ----------
+    private static String pad(String s, int w){
+        if (s == null) s = "";
+        if (s.length() >= w) return s.substring(0, w);
+        return s + " ".repeat(w - s.length());
+    }
+    private static String num(int n, int w){
+        String s = String.valueOf(n);
+        return " ".repeat(Math.max(0, w - s.length())) + s; // จัดชิดขวา
+    }
+    private void printEquipSummaryTable(List<Equipment> list){
+        if (list == null || list.isEmpty()){
+            System.out.println("ยังไม่มีรายการ");
+            return;
+        }
+        list.sort(Comparator.comparingInt(Equipment::getId)); // เรียงตามรหัสให้อ่านง่าย
+        System.out.println("--------------------------------------------------------------------------------");
+        System.out.println(
+            pad("รหัสอุปกรณ์ ", 17) + "    | " +
+            pad("ชื่อรายการ ", 30)    + " | " +
+            pad("ทั้งหมด ", 10)       + "  | " +
+            pad("คงเหลือ ", 7)
+        );
+        System.out.println("--------------------------------------------------------------------------------");
+        for (Equipment e : list){
+            System.out.println(
+                pad("#" + e.getId(), 12) + " | " +
+                pad(e.getName(), 0)     + " | " +
+                num(e.getTotal(), 10)     + " | " +
+                num(e.getAvailable(), 7)
+            );
+        }
+        System.out.println("--------------------------------------------------------------------------------");
+    }
+    // ---------- end helpers ----------
 
     private void doAdd(){
         try{
@@ -391,8 +427,7 @@ public class InventoryBorrowApp {
 
     private void doList(){
         var all = equipmentService.listAll();
-        if (all.isEmpty()) System.out.println("ยังไม่มีรายการ");
-        else all.forEach(System.out::println);
+        printEquipSummaryTable(all); // ← แสดงตาราง 4 คอลัมน์: รหัส | ชื่อ | ทั้งหมด | คงเหลือ
     }
 
     private void doBorrow(){
