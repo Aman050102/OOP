@@ -145,7 +145,7 @@ class Tx {
 
     // แสดงผลในรูปแบบตารางอ่านง่าย
     @Override public String toString(){
-        String status = isOpen()? "OPEN" : "CLOSED";
+        String status = isOpen()? "กำลังทำรายการ" : "เสร็จสิ้น";
         return String.format("%-10s | #%d %-22s | %3d | %s | %s | %s",
                 studentId, itemId, itemName, qty, fmt(borrowAt), fmt(returnAt), status);
     }
@@ -441,7 +441,7 @@ public class InventoryBorrowApp {
             default  -> borrowService.listAllTx();
         };
         if (list.isEmpty()){ System.out.println("ไม่มีประวัติ"); return; }
-        System.out.println("รหัสนิสิต | รหัสอุปกรณ์  ชื่ออุปกรณ์| จำนวน | วันและเวลาที่ยืม          | วันและเวลาที่คืน          | สถานะ");
+        System.out.println("รหัสนิสิต | รหัสอุปกรณ์  ชื่ออุปกรณ์      | จำนวน | วันและเวลาที่ยืม          | วันและเวลาที่คืน          | สถานะ");
         System.out.println("-------------------------------------------------------------------------------------------------");
         for (Tx t: list) System.out.println(t);
     }
