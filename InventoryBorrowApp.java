@@ -315,10 +315,10 @@ public class InventoryBorrowApp {
             System.out.print("เลือกเมนู: ");
             String c = sc.nextLine().trim();
             switch (c){
-                case "1", "เพิ่มรายการ" -> doAdd();
-                case "2", "ลดจำนวน" -> doReduce();
-                case "3", "ค้นหารายการ" -> doSearch();
-                case "4", "รายการทั้งหมด" -> doList();
+                case "1", "รายการทั้งหมด" -> doList(); 
+                case "2", "ค้นหารายการ" -> doSearch(); 
+                case "3", "เพิ่มรายการ" -> doAdd();
+                case "4", "ลดจำนวน" -> doReduce();
                 case "5", "ยืม อุปกรณ์" -> doBorrow();
                 case "6", "คืน อุปกรณ์" -> doReturn();
                 case "7", "ดูประวัติการยืม-คืน" -> showTx();
@@ -331,10 +331,10 @@ public class InventoryBorrowApp {
 
     private void printMenu(){
         System.out.println("=== Equipment Menu ===");
-        System.out.println("1) เพิ่มรายการ");
-        System.out.println("2) ลดจำนวน");
-        System.out.println("3) ค้นหารายการ");
-        System.out.println("4) รายการทั้งหมด");
+        System.out.println("1) รายการทั้งหมด");
+        System.out.println("2) ค้นหารายการ");
+        System.out.println("3) เพิ่มรายการ");
+        System.out.println("4) ลดรายการ");
         System.out.println("5) ยืม อุปกรณ์");
         System.out.println("6) คืน อุปกรณ์");
         System.out.println("7) ดูประวัติการยืม-คืน");
