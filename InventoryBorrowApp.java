@@ -285,7 +285,7 @@ public class InventoryBorrowApp {
     public static void main(String[] args) { new InventoryBorrowApp().run(); }
 
     private void seed(){
-        
+        equipmentService.addOrIncrease("ชื่อรายการ", 5);
     }
 
     private void run(){
