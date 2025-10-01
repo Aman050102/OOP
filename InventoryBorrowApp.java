@@ -284,8 +284,16 @@ public class InventoryBorrowApp {
 
     public static void main(String[] args) { new InventoryBorrowApp().run(); }
 
+
     private void seed(){
-        equipmentService.addOrIncrease("ชื่อรายการ", 5);
+        equipmentService.addOrIncrease("ลูกฟุตบอล", 30);
+        equipmentService.addOrIncrease("ลูกฟุตบอล", 30);
+        equipmentService.addOrIncrease("ลูกบาสเกตบอล", 20);
+        equipmentService.addOrIncrease("ลูกวอลเลย์บอล", 25);
+        equipmentService.addOrIncrease("ลูกแบดมินตัน", 100);
+        equipmentService.addOrIncrease("ลูกเซปักตะกร้อ", 15);
+        equipmentService.addOrIncrease("ไม้แบดมินตัน", 20);
+        equipmentService.addOrIncrease("ไม้ปิงปอง", 20);
     }
 
     private void run(){
