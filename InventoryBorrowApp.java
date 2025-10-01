@@ -197,8 +197,21 @@ class BorrowService {
 
     public BorrowService(EquipmentService service){ this.equipmentService = service; }
 
-    // ยืม: ตรวจของ + available ผ่าน Equipment.borrow()
+    // กติกาใหม่: ถ้านิสิตยังมี "รายการยืมค้าง" ใดๆ อยู่ จะ "ไม่ให้ยืม" ชิ้นต่อไป
+    private boolean hasAnyOpenOf(String studentId){
+        for (Tx t : txs){
+            if (t.isOpen() && t.getStudentId().equalsIgnoreCase(studentId)) return true;
+        }
+        return false;
+    }
+
+    // ยืม: ตรวจของ + available + ตรวจว่ามี OPEN อยู่หรือไม่
     public String borrow(String studentId, int itemId, int qty){
+        // กฎสำคัญ: ห้ามยืมเพิ่มถ้ายังมีรายการ OPEN (ค้างคืน) อยู่
+        if (hasAnyOpenOf(studentId)){
+            return "ยืมไม่ได้: คุณยังมีอุปกรณ์ค้างคืนอยู่ กรุณาคืนให้ครบก่อนจึงจะยืมชิ้นใหม่ได้";
+        }
+
         var e = equipmentService.find(itemId).orElse(null);
         if (e == null) return "ไม่พบอุปกรณ์";
         if (!e.borrow(qty)) return "ยืมไม่ได้ (คงเหลือไม่พอ)";
@@ -383,7 +396,7 @@ public class InventoryBorrowApp {
             System.out.print("จำนวน: ");
             int qty = Integer.parseInt(sc.nextLine().trim());
 
-            // เรียก BorrowService เพื่อยืม (เช็ค available ภายใน)
+            // เรียก BorrowService เพื่อยืม (เช็ค available และกติกา "มี OPEN ห้ามยืม")
             String msg = borrowService.borrow(sid, id, qty);
             System.out.println(msg);
         }catch(NumberFormatException nfe){
@@ -409,7 +422,7 @@ public class InventoryBorrowApp {
     }
 
     private void showTx(){
-        // เหลือ 2 ตัวเลือก: ทั้งหมด / เฉพาะรหัสนิสิต
+        // ตัวเลือก: ทั้งหมด / เฉพาะรหัสนิสิต
         System.out.println("ดูประวัติ: 1) all  2) by student");
         String m = sc.nextLine().trim();
         List<Tx> list = switch (m){
