@@ -197,7 +197,7 @@ class BorrowService {
 
     public BorrowService(EquipmentService service){ this.equipmentService = service; }
 
-    // กติกาใหม่: ถ้านิสิตยังมี "รายการยืมค้าง" ใดๆ อยู่ จะ "ไม่ให้ยืม" ชิ้นต่อไป
+    // กติกา: ถ้านิสิตยังมี "รายการยืมค้าง" ใดๆ อยู่ จะ "ไม่ให้ยืม" ชิ้นต่อไป
     private boolean hasAnyOpenOf(String studentId){
         for (Tx t : txs){
             if (t.isOpen() && t.getStudentId().equalsIgnoreCase(studentId)) return true;
@@ -359,16 +359,16 @@ public class InventoryBorrowApp {
         list.sort(Comparator.comparingInt(Equipment::getId)); // เรียงตามรหัสให้อ่านง่าย
         System.out.println("--------------------------------------------------------------------------------");
         System.out.println(
-            pad("รหัสอุปกรณ์ ", 17) + "    | " +
-            pad("ชื่อรายการ ", 30)    + " | " +
-            pad("ทั้งหมด ", 10)       + "  | " +
+            pad("รหัสอุปกรณ์ ", 15) + " | " +
+            pad("ชื่อรายการ ", 20) + " | " +
+            pad("ทั้งหมด ", 10) + "  | " +
             pad("คงเหลือ ", 7)
         );
         System.out.println("--------------------------------------------------------------------------------");
         for (Equipment e : list){
             System.out.println(
                 pad("#" + e.getId(), 12) + " | " +
-                pad(e.getName(), 0)     + " | " +
+                pad(e.getName(), 20)     + " | " +
                 num(e.getTotal(), 10)     + " | " +
                 num(e.getAvailable(), 7)
             );
@@ -427,7 +427,7 @@ public class InventoryBorrowApp {
 
     private void doList(){
         var all = equipmentService.listAll();
-        printEquipSummaryTable(all); // ← แสดงตาราง 4 คอลัมน์: รหัส | ชื่อ | ทั้งหมด | คงเหลือ
+        printEquipSummaryTable(all); //  แสดงตาราง 4 คอลัมน์: รหัส | ชื่อ | ทั้งหมด | คงเหลือ
     }
 
     private void doBorrow(){
