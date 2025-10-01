@@ -287,7 +287,6 @@ public class InventoryBorrowApp {
 
     private void seed(){
         equipmentService.addOrIncrease("ลูกฟุตบอล", 30);
-        equipmentService.addOrIncrease("ลูกฟุตบอล", 30);
         equipmentService.addOrIncrease("ลูกบาสเกตบอล", 20);
         equipmentService.addOrIncrease("ลูกวอลเลย์บอล", 25);
         equipmentService.addOrIncrease("ลูกแบดมินตัน", 100);
