@@ -334,7 +334,7 @@ public class InventoryBorrowApp {
         System.out.println("1) รายการทั้งหมด");
         System.out.println("2) ค้นหารายการ");
         System.out.println("3) เพิ่มรายการ");
-        System.out.println("4) ลดรายการ");
+        System.out.println("4) ลดจำนวน");
         System.out.println("5) ยืม อุปกรณ์");
         System.out.println("6) คืน อุปกรณ์");
         System.out.println("7) ดูประวัติการยืม-คืน");
